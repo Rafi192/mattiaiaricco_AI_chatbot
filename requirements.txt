@@ -6,3 +6,4 @@ langchain-community
 openai
 pydantic-settings
 python-dotenv
+pymongo

@@ -1,57 +1,91 @@
+from openai import OpenAI
+from app.core.config import settings
+from app.core.prompts import chat_prompt
+from app.services.history_service import save_message, get_chat_history
+from app.services.admin_service import get_prompt_config
 
-from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.output_parsers import StrOutputParser
- 
-from app.config import settings
-from app.prompts.prompt_manager import prompt_manager
-from app.prompts.template import build_chat_prompt
-from app.models.schemas import MessageHistory
- 
- 
-class ChatService:
-    def __init__(self):
-        self.llm = ChatOpenAI(
-            model=settings.openai_model,
-            temperature=settings.openai_temperature,
-            max_tokens=settings.openai_max_tokens,
-            openai_api_key=settings.openai_api_key,
-        )
- 
-    def _convert_history(self, history: list[MessageHistory]):
-        """Convert flat history dicts to LangChain message objects."""
-        messages = []
-        for msg in history:
-            if msg.role == "human":
-                messages.append(HumanMessage(content=msg.content))
-            elif msg.role == "assistant":
-                messages.append(AIMessage(content=msg.content))
-        return messages
- 
-    async def get_response(
-        self, user_message: str, chat_history: list[MessageHistory]
-    ) -> str:
-        system_instruction = prompt_manager.get_system_instruction()
-        fallback = prompt_manager.get_fallback_response()
- 
-        prompt = build_chat_prompt(system_instruction)
-        chain = prompt | self.llm | StrOutputParser()
- 
-        lc_history = self._convert_history(chat_history)
- 
-        try:
-            response = await chain.ainvoke(
-                {
-                    "user_message": user_message,
-                    "chat_history": lc_history,
-                }
-            )
-            return response.strip() if response.strip() else fallback
-        except Exception as exc:
-            # Log in production; return a safe fallback to the user
-            print(f"[ChatService] Error calling OpenAI: {exc}")
-            return fallback
- 
- 
-# Singleton
-chat_service = ChatService()
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
+
+def format_history(history):
+    formatted = []
+    for msg in history:
+        role = "human" if msg["role"] == "user" else "ai"
+        formatted.append((role, msg["content"]))
+    return formatted
+
+
+def generate_response(user_id: str, user_input: str):
+    config = get_prompt_config()
+
+    history = get_chat_history(user_id)
+
+    # Convert history to OpenAI roles
+    messages = []
+    # Add system instruction
+    if config.get("system_instruction"):
+        messages.append({"role": "system", "content": config["system_instruction"]})
+
+    # Add previous conversation
+    for msg in history:
+        role = "user" if msg["role"] == "user" else "assistant"
+        messages.append({"role": role, "content": msg["content"]})
+
+    # Add welcome message if this is the first user message
+    if not history and config.get("welcome_instruction"):
+        messages.append({"role": "system", "content": config["welcome_instruction"]})
+
+    # Add current user input
+    messages.append({"role": "user", "content": user_input})
+
+    # Call OpenAI
+    response = client.chat.completions.create(
+        model="gpt-5-mini",
+        messages=messages
+        # temperature = 1
+    )
+
+    reply = response.choices[0].message.content
+
+    # Save messages
+    save_message(user_id, "user", user_input)
+    save_message(user_id, "assistant", reply)
+
+    return reply
+
+
+
+
+
+
+
+
+
+
+# def generate_response(user_id: str, user_input: str):
+#     config = get_prompt_config()
+
+#     history = get_chat_history(user_id)
+#     formatted_history = format_history(history)
+
+#     prompt = chat_prompt.invoke({
+#         "welcome_instruction": config.get("welcome_instruction"),
+#         "system_instruction": config.get("system_instruction"),
+#         "fallback_message": config.get("fallback_message"),
+#         "history": formatted_history,
+#         "user_input": user_input
+#     })
+
+#     response = client.chat.completions.create(
+#         model="gpt-5-mini",
+#         messages=prompt.to_messages(),
+#         temperature=0.2
+#     )
+
+#     reply = response.choices[0].message.content
+
+#     save_message(user_id, "user", user_input)
+#     save_message(user_id, "assistant", reply)
+
+#     return reply
+

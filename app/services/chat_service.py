@@ -3,6 +3,8 @@ from app.core.config import settings
 from app.core.prompts import chat_prompt
 from app.services.history_service import save_message, get_chat_history
 from app.services.admin_service import get_prompt_config
+# import asyncio
+# from functools import partial
 
 client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
@@ -14,6 +16,25 @@ def format_history(history):
         formatted.append((role, msg["content"]))
     return formatted
 
+
+ROLE_MAPPING = {
+    "system": "system",
+    "human": "user",
+    "ai": "assistant"
+}
+
+def convert_prompt_to_openai_messages(prompt_messages):
+   
+    openai_messages = []
+    for msg in prompt_messages:
+        role = ROLE_MAPPING.get(msg.type)  
+        if not role:
+            continue 
+        openai_messages.append({
+            "role": role,
+            "content": msg.content
+        })
+    return openai_messages
 
 def generate_response(user_id: str, user_input: str):
     config = get_prompt_config()
@@ -30,10 +51,12 @@ def generate_response(user_id: str, user_input: str):
         "user_input": user_input
     })
 
+    messages = convert_prompt_to_openai_messages(prompt.to_messages())
+
     response = client.chat.completions.create(
         model="gpt-5-mini",
-        messages=prompt.to_messages(),
-        temperature=0.2
+        messages=messages
+        # temperature=0.2
     )
 
     reply = response.choices[0].message.content
@@ -69,11 +92,16 @@ def generate_response(user_id: str, user_input: str):
 #     messages.append({"role": "user", "content": user_input})
 
 #     # Call OpenAI
+#     # loop = asyncio.get_event_loop()
 #     response = client.chat.completions.create(
 #         model="gpt-5-mini",
 #         messages=messages
 #         # temperature = 1
 #     )
+#     # response = await loop.run_in_executor(
+#     #     None,
+#     #     partial(client.chat.completions.create, model="gpt-5-mini", messages=messages)
+#     # )
 
 #     reply = response.choices[0].message.content
 

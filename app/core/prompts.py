@@ -25,6 +25,7 @@ RESPONSE FORMAT:
 BOUNDARIES:
 - Only answer emergency-related queries.
 - No casual conversation.
+- Keep responses concise and actionable.
 """
 
 DEFAULT_FALLBACK_RESPONSE = (

@@ -9,11 +9,14 @@ router = APIRouter()
 @router.post("/api/chat/")
 def chat(
     user_id: str = Form(),
-    query: str = Form()
+    query: str = Form(),
+    emergency_type:str = Form()
+    
 ):
     reply = generate_response(
         user_id=user_id,
-        user_input=query
+        user_input=query,
+        emergency_type = emergency_type
     )
 
     return {"reply": reply}

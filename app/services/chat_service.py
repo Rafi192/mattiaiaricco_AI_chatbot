@@ -36,7 +36,7 @@ def convert_prompt_to_openai_messages(prompt_messages):
         })
     return openai_messages
 
-def generate_response(user_id: str, user_input: str):
+def generate_response(user_id: str, user_input: str, emergency_type:str):
     config = get_prompt_config()
 
     history = get_chat_history(user_id)
@@ -48,7 +48,9 @@ def generate_response(user_id: str, user_input: str):
         "system_instruction": config.get("system_instruction"),
         "fallback_message": config.get("fallback_message"),
         "history": formatted_history,
-        "user_input": user_input
+        "user_input": user_input,
+        "emergency_type": emergency_type
+
     })
 
     messages = convert_prompt_to_openai_messages(prompt.to_messages())

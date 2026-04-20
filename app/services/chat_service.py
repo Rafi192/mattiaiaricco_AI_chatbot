@@ -68,6 +68,7 @@ def generate_response(
 
     history = get_chat_history(user_id)
     formatted_history = format_history(history)
+    selected_emergency_type = emergency_type or "General Emergency"
 
     #  LangChain prompt from my core.prompts
     prompt = chat_prompt.invoke({
@@ -75,7 +76,7 @@ def generate_response(
         "system_instruction": config.get("system_instruction"),
         "fallback_message": config.get("fallback_message"),
         "response_language_instruction": _language_instruction(language),
-        "emergency_type": emergency_type,
+        "emergency_type": selected_emergency_type,
         "history": formatted_history,
         "user_input": user_input
     })

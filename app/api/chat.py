@@ -10,13 +10,14 @@ router = APIRouter()
 def chat(
     user_id: str = Form(),
     query: str = Form(),
-    emergency_type:str = Form()
-    
+    emergency_type: str = Form(default="General Emergency"),
+    language: str = Form(default="en")
 ):
     reply = generate_response(
         user_id=user_id,
         user_input=query,
-        emergency_type = emergency_type
+        emergency_type=emergency_type,
+        language=language
     )
 
     return {"reply": reply}

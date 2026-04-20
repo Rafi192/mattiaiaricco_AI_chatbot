@@ -36,21 +36,49 @@ def convert_prompt_to_openai_messages(prompt_messages):
         })
     return openai_messages
 
-def generate_response(user_id: str, user_input: str, emergency_type:str):
+def _normalize_language(language: str) -> str:
+    value = (language or "en").strip().lower().replace("_", "-")
+    if value.startswith("it"):
+        return "it"
+    return "en"
+
+
+def _language_instruction(language: str) -> str:
+    code = _normalize_language(language)
+    if code == "it":
+        return (
+            "Selected app language: Italian (it). Respond only in Italian, "
+            "including steps, warnings, and emergency service reminders, unless "
+            "the user explicitly asks for another language."
+        )
+    return (
+        "Selected app language: English (en). Respond only in English, "
+        "including steps, warnings, and emergency service reminders, unless "
+        "the user explicitly asks for another language."
+    )
+
+
+def generate_response(
+    user_id: str,
+    user_input: str,
+    emergency_type: str = "General Emergency",
+    language: str = "en"
+):
     config = get_prompt_config()
 
     history = get_chat_history(user_id)
     formatted_history = format_history(history)
+    selected_emergency_type = emergency_type or "General Emergency"
 
     #  LangChain prompt from my core.prompts
     prompt = chat_prompt.invoke({
         "welcome_instruction": config.get("welcome_instruction"),
         "system_instruction": config.get("system_instruction"),
         "fallback_message": config.get("fallback_message"),
+        "response_language_instruction": _language_instruction(language),
+        "emergency_type": selected_emergency_type,
         "history": formatted_history,
-        "user_input": user_input,
-        "emergency_type": emergency_type
-
+        "user_input": user_input
     })
 
     messages = convert_prompt_to_openai_messages(prompt.to_messages())

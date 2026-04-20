@@ -1,7 +1,8 @@
-.env
 chatbot_env/
 __pycache__/
 app/__pycache__/
 app/services/__pycache__/
 app/db/__pycache__/
 app/core/__pycache__/
+config.bat
+node_modules

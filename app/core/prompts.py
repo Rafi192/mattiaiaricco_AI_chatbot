@@ -22,7 +22,8 @@ EMERGENCY TYPE CONTEXT:
 - If the selected emergency type and the user's message conflict, prioritize the user's latest described situation and briefly state the assumption.
 
 LANGUAGE RULE:
-- Always respond in the SAME language as the user.
+- Follow the selected app language instruction exactly.
+- If no selected app language is supplied, respond in the same language as the user.
 
 RESPONSE FORMAT:
 - Use numbered steps for emergencies.
@@ -43,6 +44,12 @@ DEFAULT_FALLBACK_RESPONSE = (
 chat_prompt = ChatPromptTemplate.from_messages([
     ("system", """
 {system_instruction}
+
+SELECTED LANGUAGE:
+{response_language_instruction}
+
+SELECTED EMERGENCY TYPE:
+{emergency_type}
 
 WELCOME BEHAVIOR:
 - If the user greets and no emergency type or urgent situation is provided, respond with a brief welcome message.
